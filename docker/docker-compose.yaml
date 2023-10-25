@@ -1,13 +1,27 @@
 version: "3.8"
 services:
-  fastapi:
+  fastapi_instance1:
     restart: unless-stopped
     build:
       context: ..
       dockerfile: docker/Dockerfile
-    image: "fastapi"
-    ports:
-      - "${APP_PORT:-8000}:8000"
+    image: "fastapi_instance1"
+    expose:
+      - "8000"
+    volumes:
+      - ..:/code
+    depends_on:
+      - redis
+    entrypoint: /code/entrypoint.sh
+
+  fastapi_instance2:
+    restart: unless-stopped
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: "fastapi_instance2"
+    expose:
+      - "8001"
     volumes:
       - ..:/code
     depends_on:
@@ -20,9 +34,14 @@ services:
     command: redis-server --port ${REDIS_PORT:-7777}
     ports:
       - "${REDIS_PORT:-7777}:7777"
-    volumes:
-      - redis_data:/data
 
+  nginx:
+    build:
+      context: ..
+      dockerfile: nginx/Dockerfile
+    ports:
+      - 1337:80
+    depends_on:
+      - fastapi_instance2
+      - fastapi_instance1
 
-volumes:
-    redis_data:
